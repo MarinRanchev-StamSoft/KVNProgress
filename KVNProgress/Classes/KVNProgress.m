@@ -916,7 +916,7 @@ static KVNProgressConfiguration *configuration;
 
 - (void)addToWindow
 {
-	self.originalKeyWindow = [UIApplication sharedApplication].keyWindow;
+    self.originalKeyWindow = [UIApplication sharedApplication].keyWindow;
 	
 	if (!self.progressWindow) {
 		self.progressWindow = [[UIWindow alloc] initWithFrame:self.originalKeyWindow.frame];
@@ -931,7 +931,7 @@ static KVNProgressConfiguration *configuration;
 	// Since iOS 9.0 set the windowsLevel to UIWindowLevelStatusBar is not working anymore.
 	// This trick, place the progressWindow on the top.
 	UIWindow *lastWindow = [[[UIApplication sharedApplication] windows] lastObject];
-	self.progressWindow.windowLevel = lastWindow.windowLevel + 1;
+    self.progressWindow.windowLevel = UIWindowLevelAlert; //lastWindow.windowLevel + 1;
 	
 	[self.progressWindow makeKeyAndVisible];
 	[self addToView:self.progressWindow];
@@ -1320,17 +1320,23 @@ static KVNProgressConfiguration *configuration;
 
 - (UIImage *)blurredScreenShotWithRect:(CGRect)rect
 {
-	UIGraphicsBeginImageContextWithOptions(rect.size, NO, 0);
-	
-	[self.originalKeyWindow drawViewHierarchyInRect:rect afterScreenUpdates:NO];
-	UIImage *blurredScreenShot = UIGraphicsGetImageFromCurrentImageContext();
-	
-	UIGraphicsEndImageContext();
-	
-	blurredScreenShot = [self applyTintEffectWithColor:self.configuration.backgroundTintColor
-												 image:blurredScreenShot];
-	
-	return blurredScreenShot;
+    
+    UIView *snapshotView = [[UIApplication sharedApplication] keyWindow];
+    CGRect viewRect = [snapshotView bounds];
+    //Draw the snapshot view into a UIImage
+    UIGraphicsBeginImageContextWithOptions(snapshotView.bounds.size, YES, [UIScreen mainScreen].scale);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    if (!context) {
+        return nil;
+    }
+    CGContextTranslateCTM(context, viewRect.origin.x, viewRect.origin.y);
+    [self.superview drawViewHierarchyInRect:viewRect afterScreenUpdates:NO];
+    UIImage *blurredScreenShot = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    blurredScreenShot = [self applyTintEffectWithColor:self.configuration.backgroundTintColor
+                                                 image:blurredScreenShot];
+    return blurredScreenShot;
 }
 
 - (UIImage *)applyTintEffectWithColor:(UIColor *)tintColor
